@@ -1,9 +1,7 @@
 # Laboratorio Android. Cliente de GitHub
-
 ## Datos del estudinte
-**Nombre:** Gandy Napoleon Tercero
-**Carrera:** Ingenieria Informatica
-
+- **Nombre completo**: Gandy Tercero
+- **Carrera**: Ingeniería Informática
 ## Descripción del Proyecto
 Este proyecto es un ejercicio de laboratorio para estudiantes donde se implementará una aplicación Android que simula un cliente de GitHub. La aplicación se centrará en la implementación de interfaces y layouts, sin integración con la API REST de GitHub en esta fase.
 

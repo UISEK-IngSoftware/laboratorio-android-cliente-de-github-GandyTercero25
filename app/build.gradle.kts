@@ -25,7 +25,6 @@ android {
         } else {
             ""
         }
-
         buildConfigField("String", "GITHUB_API_TOKEN", "\"$githubToken\"")
     }
 
@@ -38,7 +37,7 @@ android {
             )
         }
     }
-    buildFeatures {
+    buildFeatures{
         viewBinding = true
         buildConfig = true
     }
