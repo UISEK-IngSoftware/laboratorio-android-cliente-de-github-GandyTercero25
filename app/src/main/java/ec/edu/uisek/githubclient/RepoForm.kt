@@ -1,12 +1,10 @@
 package ec.edu.uisek.githubclient
 
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import ec.edu.uisek.githubclient.databinding.ActivityRepoFormBinding
 import ec.edu.uisek.githubclient.models.Repo
 import ec.edu.uisek.githubclient.models.RepoRequest
@@ -16,16 +14,40 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-
 class RepoForm : AppCompatActivity() {
 
     private lateinit var binding: ActivityRepoFormBinding
+    private var repoToEdit: Repo? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityRepoFormBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        repoToEdit = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            intent.getParcelableExtra("EXTRA_REPO", Repo::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            intent.getParcelableExtra("EXTRA_REPO")
+        }
+
+        if (repoToEdit != null) {
+            binding.repoNameInput.setText(repoToEdit?.name)
+            binding.repoDescriptionInput.setText(repoToEdit?.description ?: "")
+            binding.formTitle.text = "Editar Repositorio"
+            binding.saveButton.text = "Guardar Cambios"
+        }
+
+        binding.saveButton.setOnClickListener { saveRepo() }
         binding.cancelButton.setOnClickListener { finish() }
+    }
+
+    private fun saveRepo() {
+        if (repoToEdit == null) {
+            createRepo()
+        } else {
+            updateRepo()
+        }
     }
 
     private fun validateForm(): Boolean {
@@ -41,6 +63,7 @@ class RepoForm : AppCompatActivity() {
         binding.repoNameInput.error = null
         return true
     }
+
     private fun createRepo() {
         if (!validateForm()) {
             return
@@ -57,7 +80,7 @@ class RepoForm : AppCompatActivity() {
                 if (response.isSuccessful) {
                     showMessage("Repositorio creado exitosamente")
                     finish()
-                }else{
+                } else {
                     val errorMessage = when(response.code()){
                         401 -> "No autorizado"
                         403 -> "Prohibido"
@@ -65,7 +88,6 @@ class RepoForm : AppCompatActivity() {
                         else -> "Error ${response.code()}"
                     }
                     showMessage("Error: $errorMessage")
-
                 }
             }
 
@@ -76,6 +98,42 @@ class RepoForm : AppCompatActivity() {
             }
         })
     }
+
+    private fun updateRepo() {
+        if (!validateForm()) {
+            return
+        }
+        val repoName = binding.repoNameInput.text.toString().trim()
+        val repoDescription = binding.repoDescriptionInput.text.toString().trim()
+
+        val repoRequest = RepoRequest(repoName, repoDescription)
+        val apiService = RetrofitClient.gitHubApiService
+        val call = apiService.updateRepo(repoToEdit!!.owner.login, repoToEdit!!.name, repoRequest)
+
+        call.enqueue(object: Callback<Repo> {
+            override fun onResponse(call: Call<Repo>, response: Response<Repo>) {
+                if (response.isSuccessful) {
+                    showMessage("Repositorio actualizado exitosamente")
+                    finish()
+                } else {
+                    val errorMessage = when(response.code()){
+                        401 -> "No autorizado"
+                        403 -> "Prohibido"
+                        404 -> "No encontrado"
+                        else -> "Error ${response.code()}"
+                    }
+                    showMessage("Error: $errorMessage")
+                }
+            }
+
+            override fun onFailure(call: Call<Repo>, t: Throwable) {
+                val errorMessage = "Error al actualizar el repositorio: ${t.message}"
+                Log.e("RepoForm", errorMessage, t)
+                showMessage(errorMessage)
+            }
+        })
+    }
+
     private fun showMessage(message: String) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
